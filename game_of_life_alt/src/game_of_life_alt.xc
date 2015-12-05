@@ -5,15 +5,19 @@
 #include <xs1.h>
 #include <platform.h>
 #include "interfaces.h"
+#include "write_buffer.h"
+#include "read_buffer.h"
+#include "io.h"
+#include "controller.h"
 
 #define NUM_WORKERS 4
 
-on tile[0]: in port p_btn = XS1_PORT_4E;
+in port p_btn = XS1_PORT_4E;
 //port p_sda = XS1_PORT_1F;
 //port p_led = XS1_PORT_4F;
 
-char buffer0[1000] = {0};
-char buffer1[1000] = {0,1,2,3,4,5,6,7};
+char buffer0[10000] = {0};
+char buffer1[10000] = {0,1,2,3,4,5,6,7};
 
 void xscope_user_init(void)
 {
@@ -159,52 +163,6 @@ void worker(streaming chanend write_buffer, streaming chanend read_buffer, int i
     }
 }
 
-void write_buffer(streaming chanend workers[num_workers], unsigned num_workers, client interface bufswap_if i_bufswap,
-                  char initial_buffer[n], unsigned n, streaming chanend c_rb)
-{
-    char *movable buffer = &initial_buffer[0];
-    int image_width_bits = 0;
-    int image_height_bits = 0;
-
-    while (1)
-      {
-	// Get the size of the next frame from the read buffer
-	c_rb :> image_width_bits;
-	c_rb :> image_height_bits;
-
-	// Calculate the various sizes expected
-	int slice_height = (image_height_bits + num_workers - 1) / num_workers;
-	int last_slice_height = image_height_bits - slice_height*(num_workers - 1);
-
-	int bytes_per_worker = slice_height*((image_width_bits + 7) / 8);
-	int bytes_last_worker = last_slice_height*((image_width_bits + 7) / 8);
-
-	int bytes_received_for_worker[100] = {0};
-
-	// Read in the expected amount of data from each worker
-	int workers_finished_receiving = 0;
-	while (workers_finished_receiving < num_workers) {
-	  select
-	  {
-	    case(size_t i = 0; i < num_workers; i++)
-	      bytes_received_for_worker[i] < ((i == num_workers - 1) ? bytes_last_worker : bytes_per_worker) => workers[i] :> char byte:
-		buffer[i*bytes_per_worker + bytes_received_for_worker[i]] = byte;
-		printf("WBUF: inputted byte %d from worker %d\n", bytes_received_for_worker[i], i);
-		bytes_received_for_worker[i]++;
-		if (bytes_received_for_worker[i] == ((i == num_workers - 1) ? bytes_last_worker : bytes_per_worker)) {
-		    workers_finished_receiving++;
-		}
-		break;
-	  }
-	}
-
-	// Send the new frame to the read buffer and get ready to write the next frame
-	printf("WBUF: requesting buffer swap\n");
-	i_bufswap.swap(buffer);
-    }
-
-}
-
 {int, int} get_cell_range_for_worker(int image_height, int worker_id, int num_workers)
 {
   int slice_size = (image_height + num_workers - 1) / num_workers;
@@ -216,181 +174,27 @@ void write_buffer(streaming chanend workers[num_workers], unsigned num_workers, 
     };
 }
 
-void read_buffer(streaming chanend workers[num_workers], unsigned num_workers, server interface bufswap_if i_bufswap,
-                 server interface control_if i_control, char initial_buffer[n], unsigned n, int image_width_bits, int image_height_bits,
-                 streaming chanend c_wb)
-{
-    char *movable buffer = &initial_buffer[0];
-    int round = 0;
-    while (1)
-      {
-	select
-	{
-	  case i_control.start_import():
-	    printf("RBUF[%d]: import started", round);
-	    // Update the width, height and the contents of the buffer
-
-	    // Reset the round counter
-	    round = 0;
-	    while(1){}
-	    break;
-
-	  case i_control.start_export():
-	    printf("RBUF[%d]: export started", round);
-	    // Hand the buffer pointer to the export process
-	    // Get the buffer pointer back from the export process
-	    while(1){}
-	    break;
-
-	  case i_control.pause():
-	    // Wait here until the unpause signal is received
-	    select {
-	      case i_control.unpause():
-		break;
-	    }
-	    break;
-
-	  default:
-	    break;
-	}
-
-	// Send the expected width and height of the next frame to the write buffer
-	c_wb <: image_width_bits;
-	c_wb <: image_height_bits;
-
-	// Calculate how much of the image each worker should be given
-	int slice_height = (image_height_bits + num_workers - 1) / num_workers;
-	int last_slice_height = image_height_bits - slice_height*(num_workers - 1);
-
-	int bytes_per_row = (image_width_bits + 7) / 8;
-
-	int bytes_per_worker = slice_height*bytes_per_row;
-	int bytes_last_worker = last_slice_height*bytes_per_row;
-
-	int bytes_in_image = bytes_per_worker*(num_workers-1) + bytes_last_worker;
-
-	// Inform the workers of the width and height of their chunks
-	for (int i = 0; i < num_workers - 1; i++)
-	  {
-	    workers[i] <: image_width_bits;
-	    workers[i] <: slice_height;
-	  }
-
-	// Inform the last worker of its width and height, which may differ
-	workers[num_workers-1] <: image_width_bits;
-	workers[num_workers-1] <: last_slice_height;
-
-	printf("RBUF[%d]: outputted chunk width and height to all workers\n", round);
-
-	// Distribute the row above each worker
-	for (int i = 0; i < bytes_per_row; i++)
-	  {
-	    // For the first worker, send the last row of the image
-	    workers[0] <: buffer[bytes_in_image - bytes_per_row + i];
-
-	    // For the main group of workers, send the current byte out
-	    for (int j = 1; j < num_workers; j++)
-	      {
-		workers[j] <: buffer[bytes_per_worker*j-bytes_per_row+i];
-	      }
-	  }
-
-	printf("RBUF[%d]: outputted row above to all workers\n", round);
-
-	// Distribute the current world to the workers
-	for (int i = 0; i < bytes_per_worker; i++)
-	  {
-	    // For the main group of workers, send the current byte out
-	    for (int j = 0; j < num_workers - 1; j++)
-	      {
-		workers[j] <: buffer[bytes_per_worker*j+i];
-	      }
-
-	    // Send the current byte out to the last worker if it still has data remaining
-	    if (i < bytes_last_worker)
-	      {
-		workers[num_workers-1] <: buffer[bytes_per_worker*(num_workers-1)+i];
-	      }
-
-	    printf("RBUF[%d]: outputted byte %d to all workers\n", round, i);
-	  }
-
-
-	// Distribute the row above each worker
-	for (int i = 0; i < bytes_per_row; i++)
-	  {
-	    // For the main group of workers, send the current byte out
-	    for (int j = 0; j < (num_workers - 1); j++)
-	      {
-		workers[j] <: buffer[bytes_per_worker*(j+1)+i];
-	      }
-
-	    // For the last worker, send the first row of the image
-	    workers[num_workers - 1] <: buffer[i];
-	  }
-
-	printf("RBUF[%d]: outputted row below to all workers\n", round);
-
-	// Once the write buffer has filled up, it will request a swap
-	// Wait for that request to come in:
-	select
-	{
-	  case i_bufswap.swap(char * movable &display_buffer):
-	      char * movable tmp;
-	      tmp = move(display_buffer);
-	      display_buffer = move(buffer);
-	      buffer = move(tmp);
-	      printf("RBUF[%d]: buffer swapped\n", round);
-	      // The read buffer now represents the next round
-	      round++;
-	      break;
-	}
-
-	printf("RBUF[%d]\n", round);
-      }
-}
-
-void controller(in port buttons, client interface control_if i_control)
-{
-    int buttons_value;
-
-    while (1)
-      {
-        buttons when pinseq(15) :> buttons_value;
-        buttons when pinsneq(15) :> buttons_value;
-
-        if (buttons_value == 14)
-          {
-            printf("CON: sending export trigger\n");
-            i_control.start_export();
-            printf("CON: sent export trigger\n");
-          }
-        else if (buttons_value == 13)
-          {
-            printf("CON: sending import trigger\n");
-            i_control.start_import();
-            printf("CON: sent import trigger\n");
-          }
-      }
-}
-
 int main(void)
 {
     interface bufswap_if i_bufswap;
     interface control_if i_control;
+    interface io_if i_io;
     streaming chan c_wb_w[NUM_WORKERS];
     streaming chan c_rb_w[NUM_WORKERS];
     streaming chan c_rb_wb;
 
+    xscope_user_init();
+
     par
       {
-	on tile[0]: controller(p_btn, i_control);
+	io(i_io);
+	controller(p_btn, i_control);
 	par (size_t i = 0; i < NUM_WORKERS; i++)
 	  {
-	    on tile[i%2]: worker(c_wb_w[i], c_rb_w[i], i);
+	    worker(c_wb_w[i], c_rb_w[i], i);
 	  }
-	on tile[0]: write_buffer(c_wb_w, NUM_WORKERS, i_bufswap, buffer0, 1000, c_rb_wb);
-	on tile[0]: read_buffer(c_rb_w, NUM_WORKERS, i_bufswap, i_control, buffer1, 1000, 25, 25, c_rb_wb);
+	write_buffer(c_wb_w, NUM_WORKERS, i_bufswap, buffer0, 1000, c_rb_wb);
+	read_buffer(c_rb_w, NUM_WORKERS, i_bufswap, i_control, i_io, buffer1, 1000, 25, 25, c_rb_wb);
       }
     return 0;
 }
