@@ -3,6 +3,7 @@
 	<name>game_of_life_alt</name>
 	<comment></comment>
 	<projects>
+		<project>lib_i2c</project>
 	</projects>
 	<buildSpec>
 		<buildCommand>

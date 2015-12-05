@@ -8,10 +8,14 @@ interface bufswap_if
 
 interface control_if
 {
-    [[guarded]] void start_export();
-    [[guarded]] void start_import();
-    [[guarded]] void pause();
-    [[guarded]] void unpause();
+  [[guarded]] void start_export();
+  [[guarded]] void start_import();
+};
+
+interface pause_if
+{
+  [[guarded]] void pause();
+  [[guarded]] void unpause();
 };
 
 interface io_if

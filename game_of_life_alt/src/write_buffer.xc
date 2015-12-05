@@ -4,8 +4,8 @@
 #include <xscope.h>
 #include "interfaces.h"
 
-void write_buffer(streaming chanend workers[num_workers], unsigned num_workers, client interface bufswap_if i_bufswap,
-                  char initial_buffer[n], unsigned n, streaming chanend c_rb)
+void write_buffer(chanend workers[num_workers], unsigned num_workers, client interface bufswap_if i_bufswap,
+                  char initial_buffer[n], unsigned n, chanend c_rb)
 {
     char *movable buffer = &initial_buffer[0];
     int image_width_bits = 0;
@@ -31,20 +31,20 @@ void write_buffer(streaming chanend workers[num_workers], unsigned num_workers, 
 	while (workers_finished_receiving < num_workers) {
 	  select
 	  {
-	    case(size_t i = 0; i < num_workers; i++)
-	      bytes_received_for_worker[i] < ((i == num_workers - 1) ? bytes_last_worker : bytes_per_worker) => workers[i] :> char byte:
-		buffer[i*bytes_per_worker + bytes_received_for_worker[i]] = byte;
-		printf("WBUF: inputted byte %d from worker %d\n", bytes_received_for_worker[i], i);
-		bytes_received_for_worker[i]++;
-		if (bytes_received_for_worker[i] == ((i == num_workers - 1) ? bytes_last_worker : bytes_per_worker)) {
-		    workers_finished_receiving++;
-		}
-		break;
+	      case(unsigned i = 0; i < num_workers; i++)
+		bytes_received_for_worker[i] < ((i == num_workers - 1) ? bytes_last_worker : bytes_per_worker) => workers[i] :> char byte:
+		  buffer[i*bytes_per_worker + bytes_received_for_worker[i]] = byte;
+		  //printf("WBUF: inputted byte %d from worker %d\n", bytes_received_for_worker[i], i);
+		  bytes_received_for_worker[i]++;
+		  if (bytes_received_for_worker[i] == ((i == num_workers - 1) ? bytes_last_worker : bytes_per_worker)) {
+		      workers_finished_receiving++;
+		  }
+		  break;
 	  }
 	}
 
 	// Send the new frame to the read buffer and get ready to write the next frame
-	printf("WBUF: requesting buffer swap\n");
+	//printf("WBUF: requesting buffer swap\n");
 	i_bufswap.swap(buffer);
     }
 }
