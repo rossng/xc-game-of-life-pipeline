@@ -1,4 +1,4 @@
 .metadata/
 .build/
 .settings/
-game_of_life_alt/bin/game_of_life_alt.xe
+bin/
