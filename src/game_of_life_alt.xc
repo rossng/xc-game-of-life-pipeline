@@ -5,7 +5,6 @@
 #include <xs1.h>
 #include <platform.h>
 #include "interfaces.h"
-#include "write_buffer.h"
 #include "read_buffer.h"
 #include "io.h"
 #include "controller.h"
@@ -20,7 +19,6 @@ on tile[0]: port p_sda = XS1_PORT_1F;
 //port p_led = XS1_PORT_4F;
 
 char buffer0[BUFFER_SIZE] = {0};
-char buffer1[BUFFER_SIZE] = {0};
 
 void xscope_user_init(void)
 {
@@ -30,14 +28,14 @@ void xscope_user_init(void)
 
 int main(void)
 {
-  interface bufswap_if i_bufswap;
+  //interface bufswap_if i_bufswap;
   interface pause_if i_pause;
   interface control_if i_control;
   interface i2c_master_if i_i2c[1];
   interface io_if i_io;
-  chan c_wb_w[NUM_WORKERS];
+  //chan c_wb_w[NUM_WORKERS];
   chan c_rb_w[NUM_WORKERS];
-  chan c_rb_wb;
+  //chan c_rb_wb;
 
   //xscope_user_init();
 
@@ -49,10 +47,10 @@ int main(void)
       on tile[0]: i2c_master(i_i2c, 1, p_scl, p_sda, 10);
       par (unsigned i = 0; i < NUM_WORKERS; i++)
 	{
-	  on tile[1]: worker(c_wb_w[i], c_rb_w[i], i);
+	  on tile[1]: worker(c_rb_w[i], i);
 	}
-      on tile[0]: write_buffer(c_wb_w, NUM_WORKERS, i_bufswap, buffer0, BUFFER_SIZE, c_rb_wb);
-      on tile[0]: read_buffer(c_rb_w, NUM_WORKERS, i_bufswap, i_control, i_pause, i_io, buffer1, BUFFER_SIZE, 25, 25, c_rb_wb);
+      //on tile[0]: write_buffer(c_wb_w, NUM_WORKERS, i_bufswap, buffer0, BUFFER_SIZE, c_rb_wb);
+      on tile[0]: read_buffer(c_rb_w, NUM_WORKERS, i_control, i_pause, i_io, buffer0, BUFFER_SIZE, 25, 25);
     }
   return 0;
 }

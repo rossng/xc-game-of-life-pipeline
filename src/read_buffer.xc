@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <xscope.h>
 #include "interfaces.h"
+#include "settings.h"
 
 char *movable print_world(char *movable world, int &width_bits, int &height_bits)
 {
@@ -26,9 +27,9 @@ char *movable print_world(char *movable world, int &width_bits, int &height_bits
   return move(world);
 }
 
-void read_buffer(chanend workers[num_workers], unsigned num_workers, server interface bufswap_if i_bufswap,
+void read_buffer(chanend workers[num_workers], unsigned num_workers,
                  server interface control_if i_control, server interface pause_if i_pause, client interface io_if i_io,
-                 char initial_buffer[n], unsigned n, int image_width_bits, int image_height_bits, chanend c_wb)
+                 char initial_buffer[n], unsigned n, int image_width_bits, int image_height_bits)
 {
   char *movable buffer = &initial_buffer[0];
   int round = 0;
@@ -38,16 +39,16 @@ void read_buffer(chanend workers[num_workers], unsigned num_workers, server inte
 
   while (1)
     {
-      //delay_milliseconds(2000);
+      delay_milliseconds(2000);
       select
       {
 	case i_control.start_import():
-	  //printf("RBUF[%d]: import started\n", round);
+	  printf("RBUF[%d]: import started\n", round);
 	  // Update the width, height and the contents of the buffer
 	  buffer = i_io.import(move(buffer), image_width_bits, image_height_bits);
 	  // Reset the round counter
 	  round = 0;
-	  //printf("RBUF[%d]: import finished\n", round);
+	  printf("RBUF[%d]: import finished\n", round);
 	  break;
 
 	case i_control.start_export():
@@ -78,12 +79,8 @@ void read_buffer(chanend workers[num_workers], unsigned num_workers, server inte
 
       //buffer = print_world(move(buffer), image_width_bits, image_height_bits);
 
-      // Send the expected width and height of the next frame to the write buffer
-      c_wb <: image_width_bits;
-      c_wb <: image_height_bits;
-
       // Calculate how much of the image each worker should be given
-      int slice_height = (image_height_bits + num_workers - 1) / num_workers;
+      int slice_height = image_height_bits / num_workers;
       int last_slice_height = image_height_bits - slice_height*(num_workers - 1);
 
       int bytes_per_row = (image_width_bits + 7) / 8;
@@ -130,13 +127,13 @@ void read_buffer(chanend workers[num_workers], unsigned num_workers, server inte
 	      workers[j] <: buffer[bytes_per_worker*j+i];
 	    }
 
-	  // Send the current byte out to the last worker if it still has data remaining
-	  if (i < bytes_last_worker)
-	    {
-	      workers[num_workers-1] <: buffer[bytes_per_worker*(num_workers-1)+i];
-	    }
-
 	  //printf("RBUF[%d]: outputted byte %d to all workers\n", round, i);
+	}
+
+      // Distribute the current world to the last worker
+      for (int i = 0; i < bytes_last_worker; i++)
+	{
+	  workers[num_workers-1] <: buffer[bytes_per_worker*(num_workers-1)+i];
 	}
 
 
@@ -155,22 +152,33 @@ void read_buffer(chanend workers[num_workers], unsigned num_workers, server inte
 
       //printf("RBUF[%d]: outputted row below to all workers\n", round);
 
-      // Once the write buffer has filled up, it will request a swap
-      // Wait for that request to come in:
-      select
-      {
-	case i_bufswap.swap(char * movable &display_buffer):
-	    char * movable tmp;
-	    tmp = move(display_buffer);
-	    display_buffer = move(buffer);
-	    buffer = move(tmp);
-	    //printf("RBUF[%d]: buffer swapped\n", round);
-	    // The read buffer now represents the next round
-	    round++;
-	    break;
-      }
+      // Now read the updated world back in form the workers
 
-      if (round%100 == 0)
+      int bytes_received_for_worker[NUM_WORKERS] = {0};
+
+      // Read in the expected amount of data from each worker
+      int workers_finished_receiving = 0;
+      while (workers_finished_receiving < num_workers)
+	{
+	  select
+	  {
+	      case(unsigned i = 0; i < num_workers; i++)
+		bytes_received_for_worker[i] < ((i == num_workers - 1) ? bytes_last_worker : bytes_per_worker) => workers[i] :> char byte:
+		  buffer[i*bytes_per_worker + bytes_received_for_worker[i]] = byte;
+		  //printf("WBUF: inputted byte %d from worker %d\n", bytes_received_for_worker[i], i);
+		  bytes_received_for_worker[i]++;
+		  if (bytes_received_for_worker[i] == ((i == num_workers - 1) ? bytes_last_worker : bytes_per_worker))
+		    {
+		      workers_finished_receiving++;
+		    }
+		  break;
+	  }
+        }
+
+      // Increment the round counter
+      round++;
+
+      if (round%1 == 0)
 	{
 	  t :> current_time;
 	  printf("RBUF[%d]: time is %u\n", round, current_time);

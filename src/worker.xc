@@ -124,7 +124,7 @@ void print_world_chunk(char world_chunk[], int width_bits, int height_bits, int 
   // Print row below
 }
 
-void worker(chanend write_buffer, chanend read_buffer, int id)
+void worker(chanend buffer, int id)
 {
   char world_chunk[BUFFER_SIZE/NUM_WORKERS] = {0};
   int chunk_width_bits = 0;
@@ -135,8 +135,8 @@ void worker(chanend write_buffer, chanend read_buffer, int id)
   while (1)
     {
       // Read in the width and height of the world chunk to be processed
-      read_buffer :> chunk_width_bits;
-      read_buffer :> chunk_height_bits;
+      buffer :> chunk_width_bits;
+      buffer :> chunk_height_bits;
 
       //printf("W[%d]: inputted width %d and height %d\n", id, chunk_width_bits, chunk_height_bits);
 
@@ -150,7 +150,7 @@ void worker(chanend write_buffer, chanend read_buffer, int id)
       // Read in the row above this chunk
       for (int i = 0; i < chunk_width_bits_bytes; i++)
 	{
-	  read_buffer :> world_chunk[current_index++];
+	  buffer :> world_chunk[current_index++];
 	}
 
       //printf("W[%d]: inputted row above\n", id);
@@ -158,14 +158,14 @@ void worker(chanend write_buffer, chanend read_buffer, int id)
       // Read in the chunk of the world that this worker is responsible for
       for (int i = 0; i < chunk_bytes; i++)
 	{
-	  read_buffer :> world_chunk[current_index++];
+	  buffer :> world_chunk[current_index++];
 	  //printf("W[%d]: inputted world byte %d\n", id, i);
 	}
 
       // Read in the row below this chunk
       for (int i = 0; i < chunk_width_bits_bytes; i++)
 	{
-	  read_buffer :> world_chunk[current_index++];
+	  buffer :> world_chunk[current_index++];
 	}
 
       //printf("W[%d]: inputted row below\n", id);
@@ -189,7 +189,7 @@ void worker(chanend write_buffer, chanend read_buffer, int id)
 	      // If we've finished calculating a byte, write it out to the buffer
 	      if (x%8 == 7)
 		{
-		  write_buffer <: temp_byte;
+		  buffer <: temp_byte;
 		  temp_byte = 0;
 		  bytes_written_this_row++;
 		  //printf("W[%d]: outputted byte %d\n", id, bit_index/8);
@@ -199,7 +199,7 @@ void worker(chanend write_buffer, chanend read_buffer, int id)
 	  // If the row does not divide exactly into bytes, write out the final byte
 	  if (chunk_width_bits%8 != 0)
 	    {
-	      write_buffer <: temp_byte;
+	      buffer <: temp_byte;
 	      temp_byte = 0;
 	    }
 	}

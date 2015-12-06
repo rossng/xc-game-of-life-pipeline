@@ -15,7 +15,7 @@ void io(server interface io_if i_io)
 	    break;
 	case i_io.import(char * movable world, int &width_bits, int &height_bits) -> char * movable return_world:
 	    //printf("IO: return world pointer\n");
-	    read_pgm("512x512.pgm", width_bits, height_bits, world);
+	    read_pgm("test.pgm", width_bits, height_bits, world);
 	    return_world = move(world);
 	    break;
       }
