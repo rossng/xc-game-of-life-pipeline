@@ -99,7 +99,7 @@ int read_pgm(char fname[], int * image_width, int * image_height, unsigned char 
   // Store the width and height from the image header
   fgets(str, 64, fp);
   sscanf(str, "%d%d", image_width, image_height);
-
+  printf("File of size %dx%d \n", *image_width ,*image_height);
   // Ignore the max gray value (we're assuming 255)
   fgets(str, 64, fp);
 

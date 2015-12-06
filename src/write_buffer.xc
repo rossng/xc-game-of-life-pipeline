@@ -5,8 +5,10 @@
 #include "interfaces.h"
 
 void write_buffer(chanend workers[num_workers], unsigned num_workers, client interface bufswap_if i_bufswap,
-                  char initial_buffer[n], unsigned n, chanend c_rb)
+                  chanend c_rb)
 {
+
+    char initial_buffer[131072] = {0};
     char *movable buffer = &initial_buffer[0];
     int image_width_bits = 0;
     int image_height_bits = 0;
@@ -24,7 +26,7 @@ void write_buffer(chanend workers[num_workers], unsigned num_workers, client int
 	int bytes_per_worker = slice_height*((image_width_bits + 7) / 8);
 	int bytes_last_worker = last_slice_height*((image_width_bits + 7) / 8);
 
-	int bytes_received_for_worker[100] = {0};
+	int bytes_received_for_worker[8] = {0};
 
 	// Read in the expected amount of data from each worker
 	int workers_finished_receiving = 0;

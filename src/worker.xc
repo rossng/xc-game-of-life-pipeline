@@ -122,9 +122,9 @@ void print_world_chunk(char world_chunk[], int width_bits, int height_bits, int 
   // Print row below
 }
 
-void worker(chanend write_buffer, chanend read_buffer, int id)
+void worker(chanend read_buffer, int id)
 {
-  char world_chunk[10000] = {0};
+  char world_chunk[13100] = {0};
   int chunk_width_bits = 0;
   int chunk_height_bits = 0;
   int chunk_width_bits_bytes = 0;
@@ -136,7 +136,7 @@ void worker(chanend write_buffer, chanend read_buffer, int id)
       read_buffer :> chunk_width_bits;
       read_buffer :> chunk_height_bits;
 
-      //printf("W[%d]: inputted width %d and height %d\n", id, chunk_width_bits, chunk_height_bits);
+      printf("W[%d]: inputted width %d and height %d\n", id, chunk_width_bits, chunk_height_bits);
 
       // Calculate how many bytes are expected to be read in per row
       // Cell liveness is packed as 8-per-byte
@@ -168,9 +168,11 @@ void worker(chanend write_buffer, chanend read_buffer, int id)
 
       //printf("W[%d]: inputted row below\n", id);
 
-      //print_world_chunk(world_chunk, chunk_width_bits, chunk_height_bits, id);
+       //print_world_chunk(world_chunk, chunk_width_bits, chunk_height_bits, id);
 
       // Update each bit in the chunk
+      int sent = 0;
+
       char temp_byte = 0;
       for (int y = 0; y < chunk_height_bits; y++)
 	{
@@ -187,19 +189,22 @@ void worker(chanend write_buffer, chanend read_buffer, int id)
 	      // If we've finished calculating a byte, write it out to the buffer
 	      if (x%8 == 7)
 		{
-		  write_buffer <: temp_byte;
+	      read_buffer <: temp_byte;
 		  temp_byte = 0;
 		  bytes_written_this_row++;
-		  //printf("W[%d]: outputted byte %d\n", id, bit_index/8);
+		  sent ++;
+
 		}
 	    }
 
 	  // If the row does not divide exactly into bytes, write out the final byte
 	  if (chunk_width_bits%8 != 0)
 	    {
-	      write_buffer <: temp_byte;
+	      read_buffer <: temp_byte;
 	      temp_byte = 0;
+	      sent ++;
 	    }
 	}
+      printf("Worker %d finished sending back %d!\n", id, sent);
     }
 }

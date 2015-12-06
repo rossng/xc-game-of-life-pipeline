@@ -18,10 +18,6 @@ interface pause_if
   [[guarded]] void unpause();
 };
 
-interface io_if
-{
-  char * movable export(char * movable world, int width_bits, int height_bits);
-  char * movable import(char * movable world, int &width_bits, int &height_bits);
-};
+
 
 #endif /* INTERFACES_H_ */
