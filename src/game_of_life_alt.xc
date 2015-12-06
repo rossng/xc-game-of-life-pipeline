@@ -12,6 +12,8 @@
 #include "worker.h"
 #include "i2c.h"
 #include "accelerometer_defs.h"
+#include "settings.h"
+
 
 #define NUM_WORKERS 8
 
@@ -19,6 +21,7 @@ on tile[0]: in port p_btn = XS1_PORT_4E;
 on tile[0]: port p_scl = XS1_PORT_1E;
 on tile[0]: port p_sda = XS1_PORT_1F;
 on tile[0]: port p_led = XS1_PORT_4F;
+
 
 void xscope_user_init(void)
 {
@@ -40,6 +43,7 @@ int main(void)
 
   par
     {
+
       //on tile[0] :io(i_io);
       on tile[0] :pauser(i_pause, i_i2c[0]);
       on tile[0] :controller(p_btn, i_control);
@@ -56,6 +60,7 @@ int main(void)
 	  on tile[0] : worker( c_rb_w[7], 7);
 
       on tile[1] : read_buffer(c_rb_w, NUM_WORKERS,  i_control, i_pause );
+
     }
 
   return 0;
