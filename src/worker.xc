@@ -4,6 +4,7 @@
 #include <xscope.h>
 #include <xs1.h>
 #include <platform.h>
+#include "settings.h"
 
 int coords_to_bit_index(int width, int height, int x, int y)
 {
@@ -23,7 +24,8 @@ int bit_index_to_bit_offset(int width, int height, int bit_index)
   return bit_index%8;
 }
 
-int is_live(char world_chunk[], int chunk_width_bits, int chunk_height_bits, int x, int y) {
+int is_live(char world_chunk[], int chunk_width_bits, int chunk_height_bits, int x, int y)
+{
   int bit_index = coords_to_bit_index(chunk_width_bits, chunk_height_bits, x, y);
 
   int byte_index = bit_index_to_byte_index(chunk_width_bits, chunk_height_bits, bit_index);
@@ -124,7 +126,7 @@ void print_world_chunk(char world_chunk[], int width_bits, int height_bits, int 
 
 void worker(chanend write_buffer, chanend read_buffer, int id)
 {
-  char world_chunk[10000] = {0};
+  char world_chunk[BUFFER_SIZE/NUM_WORKERS] = {0};
   int chunk_width_bits = 0;
   int chunk_height_bits = 0;
   int chunk_width_bits_bytes = 0;

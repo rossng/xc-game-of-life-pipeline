@@ -12,16 +12,15 @@
 #include "worker.h"
 #include "i2c.h"
 #include "accelerometer_defs.h"
+#include "settings.h"
 
-#define NUM_WORKERS 3
+on tile[0]: in port p_btn = XS1_PORT_4E;
+on tile[0]: port p_scl = XS1_PORT_1E;
+on tile[0]: port p_sda = XS1_PORT_1F;
+//port p_led = XS1_PORT_4F;
 
-in port p_btn = XS1_PORT_4E;
-port p_scl = XS1_PORT_1E;
-port p_sda = XS1_PORT_1F;
-port p_led = XS1_PORT_4F;
-
-char buffer0[30000] = {0};
-char buffer1[30000] = {0};
+char buffer0[BUFFER_SIZE] = {0};
+char buffer1[BUFFER_SIZE] = {0};
 
 void xscope_user_init(void)
 {
@@ -44,16 +43,16 @@ int main(void)
 
   par
     {
-      io(i_io);
-      pauser(i_pause, i_i2c[0]);
-      controller(p_btn, i_control);
-      i2c_master(i_i2c, 1, p_scl, p_sda, 10);
+      on tile[0]: io(i_io);
+      on tile[0]: pauser(i_pause, i_i2c[0]);
+      on tile[0]: controller(p_btn, i_control);
+      on tile[0]: i2c_master(i_i2c, 1, p_scl, p_sda, 10);
       par (unsigned i = 0; i < NUM_WORKERS; i++)
 	{
-	  worker(c_wb_w[i], c_rb_w[i], i);
+	  on tile[1]: worker(c_wb_w[i], c_rb_w[i], i);
 	}
-      write_buffer(c_wb_w, NUM_WORKERS, i_bufswap, buffer0, 30000, c_rb_wb);
-      read_buffer(c_rb_w, NUM_WORKERS, i_bufswap, i_control, i_pause, i_io, buffer1, 30000, 25, 25, c_rb_wb);
+      on tile[0]: write_buffer(c_wb_w, NUM_WORKERS, i_bufswap, buffer0, BUFFER_SIZE, c_rb_wb);
+      on tile[0]: read_buffer(c_rb_w, NUM_WORKERS, i_bufswap, i_control, i_pause, i_io, buffer1, BUFFER_SIZE, 25, 25, c_rb_wb);
     }
   return 0;
 }
