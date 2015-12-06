@@ -39,9 +39,6 @@ int read_acceleration(client interface i2c_master_if i2c, int reg) {
 
 void pauser(client interface pause_if i_pause, client interface i2c_master_if i2c)
 {
-  xscope_register(0, 0, "", 0, "");
-  xscope_config_io(XSCOPE_IO_BASIC);
-
   i2c_regop_res_t result;
   char status_data = 0;
   int isTilted = 0;

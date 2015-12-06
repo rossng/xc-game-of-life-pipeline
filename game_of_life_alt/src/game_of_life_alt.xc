@@ -25,8 +25,8 @@ char buffer1[30000] = {0,1,2,3,4,5,6,7};
 
 void xscope_user_init(void)
 {
-   xscope_register(0, 0, "", 0, "");
-   xscope_config_io(XSCOPE_IO_TIMED);
+   //xscope_register(0, 0, "", 0, "");
+   //xscope_config_io(XSCOPE_IO_TIMED);
 }
 
 int main(void)
@@ -40,7 +40,7 @@ int main(void)
   chan c_rb_w[NUM_WORKERS];
   chan c_rb_wb;
 
-  xscope_user_init();
+  //xscope_user_init();
 
   par
     {

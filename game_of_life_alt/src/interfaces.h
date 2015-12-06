@@ -20,7 +20,7 @@ interface pause_if
 
 interface io_if
 {
-  char * movable export(char * movable world);
+  char * movable export(char * movable world, int width_bits, int height_bits);
   char * movable import(char * movable world, int &width_bits, int &height_bits);
 };
 

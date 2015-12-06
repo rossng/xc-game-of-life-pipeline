@@ -1,6 +1,6 @@
 #include <stdio.h>
-#include <xscope.h>
 #include "interfaces.h"
+#include "pgm.h"
 
 void io(server interface io_if i_io)
 {
@@ -8,14 +8,14 @@ void io(server interface io_if i_io)
     {
       select
       {
-	case i_io.export(char * movable world) -> char * movable return_world:
+	case i_io.export(char * movable world, int width_bits, int height_bits) -> char * movable return_world:
 	    //printf("IO: returning world pointer\n");
+	    write_pgm("out.pgm", world, width_bits, height_bits);
 	    return_world = move(world);
 	    break;
 	case i_io.import(char * movable world, int &width_bits, int &height_bits) -> char * movable return_world:
 	    //printf("IO: return world pointer\n");
-	    width_bits = 100;
-	    height_bits = 100;
+	    read_pgm("128x128.pgm", width_bits, height_bits, world);
 	    return_world = move(world);
 	    break;
       }

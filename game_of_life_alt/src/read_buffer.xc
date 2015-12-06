@@ -4,6 +4,28 @@
 #include <xscope.h>
 #include "interfaces.h"
 
+char *movable print_world(char *movable world, int &width_bits, int &height_bits)
+{
+  int bytes_per_row = (width_bits + 7) / 8;
+
+  for (int row = 0; row < height_bits; row++)
+    {
+      for (int byte = 0; byte < bytes_per_row; byte++)
+	{
+	  char this_byte = world[row*bytes_per_row + byte];
+	  for (int i = 0; i < 8; i++)
+	    {
+	      printf("%c ", ((this_byte >> (7-i)) & 1) == 1 ? '*' : ' ');
+	    }
+	}
+      printf("\n");
+    }
+
+  printf("\n");
+
+  return move(world);
+}
+
 void read_buffer(chanend workers[num_workers], unsigned num_workers, server interface bufswap_if i_bufswap,
                  server interface control_if i_control, server interface pause_if i_pause, client interface io_if i_io,
                  char initial_buffer[n], unsigned n, int image_width_bits, int image_height_bits, chanend c_wb)
@@ -14,6 +36,7 @@ void read_buffer(chanend workers[num_workers], unsigned num_workers, server inte
 
   while (1)
     {
+      delay_milliseconds(2000);
       select
       {
 	case i_control.start_import():
@@ -28,7 +51,7 @@ void read_buffer(chanend workers[num_workers], unsigned num_workers, server inte
 	case i_control.start_export():
 	  //printf("RBUF[%d]: export started\n", round);
 	  // Hand the buffer pointer to the export process
-	  buffer = i_io.export(move(buffer));
+	  buffer = i_io.export(move(buffer), image_width_bits, image_height_bits);
 	  // Get the buffer pointer back from the export process
 	  //printf("RBUF[%d]: export finished\n", round);
 	  break;
@@ -50,6 +73,8 @@ void read_buffer(chanend workers[num_workers], unsigned num_workers, server inte
 	      break;
 	  }
 	}
+
+      //buffer = print_world(move(buffer), image_width_bits, image_height_bits);
 
       // Send the expected width and height of the next frame to the write buffer
       c_wb <: image_width_bits;
