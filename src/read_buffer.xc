@@ -170,7 +170,7 @@ void read_buffer(chanend workers[num_workers], unsigned num_workers, server inte
 	    break;
       }
 
-      if (round%1000 == 0)
+      if (round%100 == 0)
 	{
 	  t :> current_time;
 	  printf("RBUF[%d]: time is %u\n", round, current_time);
