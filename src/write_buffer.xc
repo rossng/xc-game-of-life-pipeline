@@ -24,25 +24,22 @@ void write_buffer(chanend workers[num_workers], unsigned num_workers, client int
 
 	int bytes_per_worker = slice_height*((image_width_bits + 7) / 8);
 	int bytes_last_worker = last_slice_height*((image_width_bits + 7) / 8);
+	int total_bytes = bytes_per_worker * (num_workers - 1) + bytes_last_worker;
 
 	int bytes_received_for_worker[NUM_WORKERS] = {0};
 
 	// Read in the expected amount of data from each worker
-	int workers_finished_receiving = 0;
-	while (workers_finished_receiving < num_workers) {
-	  select
+	for (int i = 0; i < total_bytes; i++)
 	  {
-	      case(unsigned i = 0; i < num_workers; i++)
-		bytes_received_for_worker[i] < ((i == num_workers - 1) ? bytes_last_worker : bytes_per_worker) => workers[i] :> char byte:
-		  buffer[i*bytes_per_worker + bytes_received_for_worker[i]] = byte;
+	    select
+	    {
+	      case workers[int j] :> char byte:
+		  buffer[j*bytes_per_worker + bytes_received_for_worker[j]] = byte;
+		  bytes_received_for_worker[j]++;
 		  //printf("WBUF: inputted byte %d from worker %d\n", bytes_received_for_worker[i], i);
-		  bytes_received_for_worker[i]++;
-		  if (bytes_received_for_worker[i] == ((i == num_workers - 1) ? bytes_last_worker : bytes_per_worker)) {
-		      workers_finished_receiving++;
-		  }
 		  break;
+	    }
 	  }
-	}
 
 	// Send the new frame to the read buffer and get ready to write the next frame
 	//printf("WBUF: requesting buffer swap\n");
