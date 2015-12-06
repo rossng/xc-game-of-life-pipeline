@@ -4,7 +4,7 @@
 #include <xscope.h>
 #include <xs1.h>
 #include <platform.h>
-#include "settings.h"
+
 
 int coords_to_bit_index(int width, int height, int x, int y)
 {
@@ -140,7 +140,7 @@ void worker(chanend read_buffer, int id)
       read_buffer :> chunk_width_bits;
       read_buffer :> chunk_height_bits;
 
-      printf("W[%d]: inputted width %d and height %d\n", id, chunk_width_bits, chunk_height_bits);
+      //printf("W[%d]: inputted width %d and height %d\n", id, chunk_width_bits, chunk_height_bits);
 
       // Calculate how many bytes are expected to be read in per row
       // Cell liveness is packed as 8-per-byte
@@ -175,7 +175,7 @@ void worker(chanend read_buffer, int id)
        //print_world_chunk(world_chunk, chunk_width_bits, chunk_height_bits, id);
 
       // Update each bit in the chunk
-      int sent = 0;
+
 
       char temp_byte = 0;
       for (int y = 0; y < chunk_height_bits; y++)
@@ -196,7 +196,7 @@ void worker(chanend read_buffer, int id)
 	      read_buffer <: temp_byte;
 		  temp_byte = 0;
 		  bytes_written_this_row++;
-		  sent ++;
+
 
 		}
 	    }
@@ -206,9 +206,9 @@ void worker(chanend read_buffer, int id)
 	    {
 	      read_buffer <: temp_byte;
 	      temp_byte = 0;
-	      sent ++;
+
 	    }
 	}
-      printf("Worker %d finished sending back %d!\n", id, sent);
+
     }
 }

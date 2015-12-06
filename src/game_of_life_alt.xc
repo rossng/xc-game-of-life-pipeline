@@ -7,7 +7,6 @@
 #include "interfaces.h"
 #include "write_buffer.h"
 #include "read_buffer.h"
-#include "io.h"
 #include "controller.h"
 #include "worker.h"
 #include "i2c.h"
@@ -15,7 +14,7 @@
 #include "settings.h"
 
 
-#define NUM_WORKERS 8
+
 
 on tile[0]: in port p_btn = XS1_PORT_4E;
 on tile[0]: port p_scl = XS1_PORT_1E;
@@ -44,7 +43,7 @@ int main(void)
   par
     {
 
-      //on tile[0] :io(i_io);
+
       on tile[0] :pauser(i_pause, i_i2c[0]);
       on tile[0] :controller(p_btn, i_control);
       on tile[0] :i2c_master(i_i2c, 1, p_scl, p_sda, 10);

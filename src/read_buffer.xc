@@ -46,17 +46,16 @@ void read_buffer(chanend workers[num_workers], unsigned num_workers,
   while (1)
     {
 
-      printf("Round %d\n", round);
+      //printf("Round %d\n", round);
 
       int total_bytes = 0;
 
-      //delay_milliseconds(2000);
       select
       {
 	case i_control.start_import():
 	  printf("RBUF[%d]: import started\n", round);
 	  // Update the width, height and the contents of the buffer
-	  read_pgm("small.pgm", image_width_bits, image_height_bits, buffer);
+	  read_pgm("1024x1024.pgm", image_width_bits, image_height_bits, buffer);
 	  // Reset the round counter
 	  round = 0;
 	  printf("RBUF[%d]: import finished\n", round);
@@ -89,7 +88,6 @@ void read_buffer(chanend workers[num_workers], unsigned num_workers,
     {
 
       //buffer = print_world(move(buffer), image_width_bits, image_height_bits);
-
 
       // Calculate how much of the image each worker should be given
       int slice_height = image_height_bits  / num_workers;
@@ -183,16 +181,15 @@ void read_buffer(chanend workers[num_workers], unsigned num_workers,
                   break;
 
        }
-
-
-      }
-
-      if(round%100 == 0){
-          t :> current_time;
-          printf("RBUF[%d]: time is %u\n", round, current_time);
-      }
+     }
 
       round ++;
+      if(round%100 == 0){
+          t :> current_time;
+          printf("RBUF[%d]: time is %u\n", round, current_time );
+      }
+
+
   }
 }
 }
