@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <xscope.h>
 #include "interfaces.h"
+#include "settings.h"
 
 void write_buffer(chanend workers[num_workers], unsigned num_workers, client interface bufswap_if i_bufswap,
                   char initial_buffer[n], unsigned n, chanend c_rb)
@@ -24,7 +25,7 @@ void write_buffer(chanend workers[num_workers], unsigned num_workers, client int
 	int bytes_per_worker = slice_height*((image_width_bits + 7) / 8);
 	int bytes_last_worker = last_slice_height*((image_width_bits + 7) / 8);
 
-	int bytes_received_for_worker[100] = {0};
+	int bytes_received_for_worker[NUM_WORKERS] = {0};
 
 	// Read in the expected amount of data from each worker
 	int workers_finished_receiving = 0;
