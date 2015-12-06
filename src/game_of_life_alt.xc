@@ -21,7 +21,7 @@ port p_sda = XS1_PORT_1F;
 port p_led = XS1_PORT_4F;
 
 char buffer0[30000] = {0};
-char buffer1[30000] = {0,1,2,3,4,5,6,7};
+char buffer1[30000] = {0};
 
 void xscope_user_init(void)
 {

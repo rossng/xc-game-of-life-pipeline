@@ -33,10 +33,12 @@ void read_buffer(chanend workers[num_workers], unsigned num_workers, server inte
   char *movable buffer = &initial_buffer[0];
   int round = 0;
   int paused = 0;
+  unsigned int current_time;
+  timer t;
 
   while (1)
     {
-      delay_milliseconds(2000);
+      //delay_milliseconds(2000);
       select
       {
 	case i_control.start_import():
@@ -168,6 +170,10 @@ void read_buffer(chanend workers[num_workers], unsigned num_workers, server inte
 	    break;
       }
 
-      printf("RBUF[%d]\n", round);
+      if (round%1000 == 0)
+	{
+	  t :> current_time;
+	  printf("RBUF[%d]: time is %u\n", round, current_time);
+	}
     }
 }
