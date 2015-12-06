@@ -39,7 +39,7 @@ void read_buffer(chanend workers[num_workers], unsigned num_workers,
 
   while (1)
     {
-      delay_milliseconds(2000);
+      //delay_milliseconds(2000);
       select
       {
 	case i_control.start_import():
@@ -178,7 +178,7 @@ void read_buffer(chanend workers[num_workers], unsigned num_workers,
       // Increment the round counter
       round++;
 
-      if (round%1 == 0)
+      if (round%100 == 0)
 	{
 	  t :> current_time;
 	  printf("RBUF[%d]: time is %u\n", round, current_time);
