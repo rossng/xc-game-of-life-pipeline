@@ -127,7 +127,7 @@ void print_world_chunk(char world_chunk[], int width_bits, int height_bits, int 
 void worker(chanend read_buffer, int id)
 {
 
-  char world_chunk[13100] = {0};
+  char world_chunk[17000] = {0};
 
   int chunk_width_bits = 0;
   int chunk_height_bits = 0;
@@ -157,13 +157,14 @@ void worker(chanend read_buffer, int id)
 
       //printf("W[%d]: inputted row above\n", id);
 
+      //printf("W%d chunks_b %d\n", chunk_bytes);
       // Read in the chunk of the world that this worker is responsible for
       for (int i = 0; i < chunk_bytes; i++)
 	{
 	  read_buffer :> world_chunk[current_index++];
 	  //printf("W[%d]: inputted world byte %d\n", id, i);
 	}
-
+      //printf("W[%d]: Read world\n", id);
       // Read in the row below this chunk
       for (int i = 0; i < chunk_width_bits_bytes; i++)
 	{
@@ -209,6 +210,7 @@ void worker(chanend read_buffer, int id)
 
 	    }
 	}
+      //printf("Worker %d finsihed sending data\n", id);
 
     }
 }

@@ -5,7 +5,6 @@
 #include <xs1.h>
 #include <platform.h>
 #include "interfaces.h"
-#include "write_buffer.h"
 #include "read_buffer.h"
 #include "controller.h"
 #include "worker.h"
