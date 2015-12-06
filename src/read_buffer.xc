@@ -33,7 +33,8 @@ void read_buffer(chanend workers[num_workers], unsigned num_workers, server inte
   char *movable buffer = &initial_buffer[0];
   int round = 0;
   int paused = 0;
-  unsigned int current_time;
+  unsigned int start_time = 0;
+  unsigned int end_time = 0;
   timer t;
 
   while (1)
@@ -83,7 +84,7 @@ void read_buffer(chanend workers[num_workers], unsigned num_workers, server inte
       c_wb <: image_height_bits;
 
       // Calculate how much of the image each worker should be given
-      int slice_height = (image_height_bits + num_workers - 1) / num_workers;
+      int slice_height = image_height_bits / num_workers;
       int last_slice_height = image_height_bits - slice_height*(num_workers - 1);
 
       int bytes_per_row = (image_width_bits + 7) / 8;
@@ -130,15 +131,14 @@ void read_buffer(chanend workers[num_workers], unsigned num_workers, server inte
 	      workers[j] <: buffer[bytes_per_worker*j+i];
 	    }
 
-	  // Send the current byte out to the last worker if it still has data remaining
-	  if (i < bytes_last_worker)
-	    {
-	      workers[num_workers-1] <: buffer[bytes_per_worker*(num_workers-1)+i];
-	    }
-
 	  //printf("RBUF[%d]: outputted byte %d to all workers\n", round, i);
 	}
 
+      // Send the current byte out to the last worker
+      for (int i = 0; i < bytes_last_worker; i++)
+	{
+	  workers[num_workers-1] <: buffer[bytes_per_worker*(num_workers-1)+i];
+	}
 
       // Distribute the row above each worker
       for (int i = 0; i < bytes_per_row; i++)
@@ -170,10 +170,16 @@ void read_buffer(chanend workers[num_workers], unsigned num_workers, server inte
 	    break;
       }
 
-      if (round%100 == 0)
+      if (round == 100)
 	{
-	  t :> current_time;
-	  printf("RBUF[%d]: time is %u\n", round, current_time);
+	  start_time = 0;
+	  end_time = 0;
+	  t :> start_time;
 	}
+      if (round == 200)
+	{
+	  t :> end_time;
+	  printf("RBUF[%d]: start %u, end %u\n", round, start_time, end_time);
+        }
     }
 }

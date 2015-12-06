@@ -19,7 +19,7 @@ void write_buffer(chanend workers[num_workers], unsigned num_workers, client int
 	c_rb :> image_height_bits;
 
 	// Calculate the various sizes expected
-	int slice_height = (image_height_bits + num_workers - 1) / num_workers;
+	int slice_height = image_height_bits / num_workers;
 	int last_slice_height = image_height_bits - slice_height*(num_workers - 1);
 
 	int bytes_per_worker = slice_height*((image_width_bits + 7) / 8);
